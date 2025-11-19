@@ -1,0 +1,72 @@
+import React, { useState } from 'react';
+import { Droppable } from 'react-beautiful-dnd';
+import Card from './Card';
+import Modal from './Modal';
+
+const List = ({ list, cards, onCreateCard }) => {
+  const [showCardModal, setShowCardModal] = useState(false);
+
+  const handleCreateCard = (data) => {
+    onCreateCard(data.title, list.id);
+    setShowCardModal(false);
+  };
+
+  return (
+    <>
+      <div className="list">
+        <div className="list-header">
+          <h3 className="list-title">{list.name}</h3>
+          <div className="list-actions">
+            <button 
+              className="btn"
+              onClick={() => setShowCardModal(true)}
+            >
+              +
+            </button>
+          </div>
+        </div>
+        
+        <Droppable droppableId={list.id}>
+          {(provided, snapshot) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              style={{
+                backgroundColor: snapshot.isDraggingOver ? '#f4f5f7' : 'transparent',
+                minHeight: '20px',
+                borderRadius: '8px',
+                transition: 'background-color 0.2s ease'
+              }}
+            >
+              {cards.map((card, index) => (
+                <Card key={card.id} card={card} index={index} />
+              ))}
+              {provided.placeholder}
+              
+              <div 
+                className="add-card"
+                onClick={() => setShowCardModal(true)}
+              >
+                + Add a card
+              </div>
+            </div>
+          )}
+        </Droppable>
+      </div>
+
+      {showCardModal && (
+        <Modal
+          title="Create New Card"
+          onClose={() => setShowCardModal(false)}
+          onSubmit={handleCreateCard}
+          fields={[
+            { name: 'title', label: 'Card Title', required: true },
+            { name: 'description', label: 'Description', type: 'textarea' }
+          ]}
+        />
+      )}
+    </>
+  );
+};
+
+export default List;

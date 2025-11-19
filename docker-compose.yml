@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: epitrello-backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    networks:
+      - epitrello-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: epitrello-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001/api
+    depends_on:
+      - backend
+    networks:
+      - epitrello-network
+
+networks:
+  epitrello-network:
+    driver: bridge
+
+volumes:
+  epitrello-data:
