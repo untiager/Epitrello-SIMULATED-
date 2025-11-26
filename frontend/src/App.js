@@ -105,6 +105,26 @@ function App() {
     }
   };
 
+  const deleteCard = async (cardId) => {
+    try {
+      await cardsApi.delete(cardId);
+      setCards(cards.filter(c => c.id !== cardId));
+    } catch (error) {
+      console.error('Error deleting card:', error);
+    }
+  };
+
+  const deleteList = async (listId) => {
+    try {
+      await listsApi.delete(listId);
+      // Also remove all cards associated with this list
+      setCards(cards.filter(c => c.listId !== listId));
+      setLists(lists.filter(l => l.id !== listId));
+    } catch (error) {
+      console.error('Error deleting list:', error);
+    }
+  };
+
   const onDragEnd = async (result) => {
     const { destination, source, draggableId } = result;
 
@@ -178,6 +198,8 @@ function App() {
             cards={cards}
             onCreateList={createList}
             onCreateCard={createCard}
+            onDeleteCard={deleteCard}
+            onDeleteList={deleteList}
           />
         ) : (
           <div style={{ color: 'white', textAlign: 'center', marginTop: '50px' }}>

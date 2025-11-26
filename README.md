@@ -97,7 +97,7 @@ npm start   # Runs React development server
 
 ```
 epitrello/
-├── frontend/                 # React frontend application
+├── frontend/                # React frontend application
 │   ├── src/
 │   │   ├── components/      # React components
 │   │   │   ├── Board.js     # Main board component
@@ -112,7 +112,7 @@ epitrello/
 │   ├── public/
 │   ├── Dockerfile
 │   └── package.json
-├── backend/                  # Node.js/Express backend
+├── backend/                 # Node.js/Express backend
 │   ├── routes/              # API route handlers
 │   │   ├── boards.js        # Board CRUD operations
 │   │   ├── lists.js         # List CRUD operations
@@ -124,7 +124,7 @@ epitrello/
 │   ├── server.js            # Express server setup
 │   ├── Dockerfile
 │   └── package.json
-├── docker-compose.yml        # Docker orchestration
+├── docker-compose.yml       # Docker orchestration
 └── README.md
 ```
 
@@ -175,11 +175,13 @@ The application uses simple JSON file storage:
 
 ## Future Enhancements
 
-Potential features to add:
+Potential features to add (due to the 5/12):
+- possibility to delete card and lists
 - User authentication and authorization
 - Real-time collaboration with WebSockets
 - Card due dates and notifications
 - File attachments
+----------------Later on--------------------
 - Database integration (PostgreSQL/MongoDB)
 - Advanced search and filtering
 - Card comments and activity history
