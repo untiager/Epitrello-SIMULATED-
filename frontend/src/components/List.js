@@ -7,7 +7,7 @@ const List = ({ list, cards, onCreateCard, onDeleteCard, onDeleteList }) => {
   const [showCardModal, setShowCardModal] = useState(false);
 
   const handleCreateCard = (data) => {
-    onCreateCard(data.title, list.id);
+    onCreateCard(data, list.id);
     setShowCardModal(false);
   };
 
@@ -76,7 +76,8 @@ const List = ({ list, cards, onCreateCard, onDeleteCard, onDeleteList }) => {
           onSubmit={handleCreateCard}
           fields={[
             { name: 'title', label: 'Card Title', required: true },
-            { name: 'description', label: 'Description', type: 'textarea' }
+            { name: 'description', label: 'Description', type: 'textarea' },
+            { name: 'dueDate', label: 'Due Date', type: 'date' }
           ]}
         />
       )}

@@ -3,17 +3,30 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const socketIo = require('socket.io');
 
 const boardRoutes = require('./routes/boards');
 const listRoutes = require('./routes/lists');
 const cardRoutes = require('./routes/cards');
+const uploadRoutes = require('./routes/uploads');
+const authRoutes = require('./routes/auth');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST", "PUT", "DELETE"]
+    }
+});
+
 const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // Ensure data directory exists
 const dataDir = path.join(__dirname, 'data');
@@ -31,16 +44,64 @@ dataFiles.forEach(file => {
     }
 });
 
+// WebSocket connection handling
+io.on('connection', (socket) => {
+    console.log('New client connected:', socket.id);
+
+    socket.on('join-board', (boardId) => {
+        socket.join(`board-${boardId}`);
+        console.log(`Client ${socket.id} joined board ${boardId}`);
+    });
+
+    socket.on('leave-board', (boardId) => {
+        socket.leave(`board-${boardId}`);
+        console.log(`Client ${socket.id} left board ${boardId}`);
+    });
+
+    socket.on('card-created', (data) => {
+        socket.to(`board-${data.boardId}`).emit('card-created', data.card);
+    });
+
+    socket.on('card-updated', (data) => {
+        socket.to(`board-${data.boardId}`).emit('card-updated', data.card);
+    });
+
+    socket.on('card-deleted', (data) => {
+        socket.to(`board-${data.boardId}`).emit('card-deleted', data.cardId);
+    });
+
+    socket.on('list-created', (data) => {
+        socket.to(`board-${data.boardId}`).emit('list-created', data.list);
+    });
+
+    socket.on('list-updated', (data) => {
+        socket.to(`board-${data.boardId}`).emit('list-updated', data.list);
+    });
+
+    socket.on('list-deleted', (data) => {
+        socket.to(`board-${data.boardId}`).emit('list-deleted', data.listId);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+    });
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/lists', listRoutes);
 app.use('/api/cards', cardRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Epitrello API is running' });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

@@ -2,14 +2,39 @@ import React, { useState } from 'react';
 
 const Modal = ({ title, onClose, onSubmit, fields }) => {
   const [formData, setFormData] = useState({});
+  const [attachments, setAttachments] = useState([]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({ ...formData, attachments });
   };
 
   const handleInputChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    const filePromises = files.map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          resolve({
+            fileName: file.name,
+            fileData: event.target.result,
+            size: file.size
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    
+    const fileData = await Promise.all(filePromises);
+    setAttachments(prev => [...prev, ...fileData]);
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -49,6 +74,47 @@ const Modal = ({ title, onClose, onSubmit, fields }) => {
               )}
             </div>
           ))}
+          
+          <div className="form-group">
+            <label className="form-label">Attachments</label>
+            <input
+              type="file"
+              multiple
+              onChange={handleFileChange}
+              className="form-input"
+              style={{ padding: '8px' }}
+            />
+            {attachments.length > 0 && (
+              <div style={{ marginTop: '8px' }}>
+                {attachments.map((att, idx) => (
+                  <div key={idx} style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '4px 8px',
+                    backgroundColor: '#f4f5f7',
+                    borderRadius: '4px',
+                    marginBottom: '4px'
+                  }}>
+                    <span style={{ fontSize: '12px' }}>📎 {att.fileName}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#dc3545',
+                        cursor: 'pointer',
+                        fontSize: '16px'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           
           <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>

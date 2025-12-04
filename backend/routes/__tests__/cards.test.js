@@ -121,7 +121,9 @@ describe('Cards API Routes', () => {
       const newCard = {
         title: 'New Test Card',
         description: 'New Description',
-        listId: 'list1'
+        listId: 'list1',
+        dueDate: '2024-12-31',
+        attachments: []
       };
 
       const response = await request(app)
@@ -133,6 +135,8 @@ describe('Cards API Routes', () => {
       expect(response.body).toHaveProperty('title', 'New Test Card');
       expect(response.body).toHaveProperty('description', 'New Description');
       expect(response.body).toHaveProperty('listId', 'list1');
+      expect(response.body).toHaveProperty('dueDate', '2024-12-31');
+      expect(response.body).toHaveProperty('attachments');
       expect(response.body).toHaveProperty('position');
       expect(response.body).toHaveProperty('createdAt');
       
@@ -152,6 +156,9 @@ describe('Cards API Routes', () => {
         .expect(201);
 
       expect(response.body).toHaveProperty('description', '');
+      expect(response.body).toHaveProperty('dueDate', null);
+      expect(response.body).toHaveProperty('attachments');
+      expect(response.body.attachments).toEqual([]);
       expect(response.body).toHaveProperty('position');
     });
 

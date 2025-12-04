@@ -40,6 +40,8 @@ router.post('/', (req, res) => {
             description: req.body.description || '',
             listId: req.body.listId,
             position: req.body.position || cards.filter(c => c.listId === req.body.listId).length,
+            dueDate: req.body.dueDate || null,
+            attachments: req.body.attachments || [],
             createdAt: new Date().toISOString()
         };
         cards.push(newCard);

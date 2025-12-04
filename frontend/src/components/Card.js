@@ -9,6 +9,16 @@ const Card = ({ card, index, onDelete }) => {
     }
   };
 
+  const isOverdue = card.dueDate && new Date(card.dueDate) < new Date();
+  const isDueSoon = card.dueDate && new Date(card.dueDate) < new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    // Parse the date string directly to avoid timezone issues
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <Draggable draggableId={card.id} index={index}>
       {(provided, snapshot) => (
@@ -23,6 +33,7 @@ const Card = ({ card, index, onDelete }) => {
               ? `${provided.draggableProps.style?.transform} rotate(5deg)` 
               : provided.draggableProps.style?.transform,
             opacity: snapshot.isDragging ? 0.8 : 1,
+            borderLeft: isOverdue ? '3px solid #dc3545' : (isDueSoon && !isOverdue) ? '3px solid #ffc107' : 'none'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -49,6 +60,36 @@ const Card = ({ card, index, onDelete }) => {
               {card.description}
             </p>
           )}
+          <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {card.dueDate && (
+              <span 
+                style={{ 
+                  fontSize: '11px', 
+                  padding: '2px 6px', 
+                  borderRadius: '3px',
+                  backgroundColor: isOverdue ? '#dc3545' : (isDueSoon && !isOverdue) ? '#ffc107' : '#e3e8ef',
+                  color: (isOverdue || (isDueSoon && !isOverdue)) ? 'white' : '#172b4d',
+                  fontWeight: '500'
+                }}
+              >
+                📅 {formatDate(card.dueDate)}
+              </span>
+            )}
+            {card.attachments && card.attachments.length > 0 && (
+              <span 
+                style={{ 
+                  fontSize: '11px', 
+                  padding: '2px 6px', 
+                  borderRadius: '3px',
+                  backgroundColor: '#e3e8ef',
+                  color: '#172b4d',
+                  fontWeight: '500'
+                }}
+              >
+                📎 {card.attachments.length}
+              </span>
+            )}
+          </div>
         </div>
       )}
     </Draggable>

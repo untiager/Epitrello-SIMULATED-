@@ -29,3 +29,9 @@ export const cardsApi = {
   update: (id, data) => api.put(`/cards/${id}`, data),
   delete: (id) => api.delete(`/cards/${id}`),
 };
+
+export const uploadsApi = {
+  upload: (data) => api.post('/uploads/upload', data),
+  download: (fileName) => api.get(`/uploads/download/${fileName}`),
+  delete: (fileName) => api.delete(`/uploads/${fileName}`),
+};

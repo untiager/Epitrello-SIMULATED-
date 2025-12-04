@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import Board from './components/Board';
 import Modal from './components/Modal';
-import { boardsApi, listsApi, cardsApi } from './services/api';
+import Notifications from './components/Notifications';
+import Login from './components/Login';
+import { boardsApi, listsApi, cardsApi, uploadsApi } from './services/api';
+import io from 'socket.io-client';
+
+const SOCKET_URL = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001';
 
 function App() {
   const [boards, setBoards] = useState([]);
@@ -11,6 +16,82 @@ function App() {
   const [cards, setCards] = useState([]);
   const [showBoardModal, setShowBoardModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [socket, setSocket] = useState(null);
+  const [user, setUser] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
+
+  // Check for existing auth on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (token && savedUser) {
+      setUser(JSON.parse(savedUser));
+    } else {
+      setShowLogin(true);
+    }
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setShowLogin(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setShowLogin(true);
+  };
+
+  // Initialize socket connection
+  useEffect(() => {
+    const newSocket = io(SOCKET_URL);
+    setSocket(newSocket);
+
+    return () => newSocket.close();
+  }, []);
+
+  // Handle socket events
+  useEffect(() => {
+    if (!socket || !currentBoard) return;
+
+    socket.emit('join-board', currentBoard.id);
+
+    socket.on('card-created', (card) => {
+      setCards(prev => [...prev, card]);
+    });
+
+    socket.on('card-updated', (updatedCard) => {
+      setCards(prev => prev.map(c => c.id === updatedCard.id ? updatedCard : c));
+    });
+
+    socket.on('card-deleted', (cardId) => {
+      setCards(prev => prev.filter(c => c.id !== cardId));
+    });
+
+    socket.on('list-created', (list) => {
+      setLists(prev => [...prev, list]);
+    });
+
+    socket.on('list-updated', (updatedList) => {
+      setLists(prev => prev.map(l => l.id === updatedList.id ? updatedList : l));
+    });
+
+    socket.on('list-deleted', (listId) => {
+      setLists(prev => prev.filter(l => l.id !== listId));
+      setCards(prev => prev.filter(c => c.listId !== listId));
+    });
+
+    return () => {
+      socket.emit('leave-board', currentBoard.id);
+      socket.off('card-created');
+      socket.off('card-updated');
+      socket.off('card-deleted');
+      socket.off('list-created');
+      socket.off('list-updated');
+      socket.off('list-deleted');
+    };
+  }, [socket, currentBoard]);
 
   useEffect(() => {
     loadBoards();
@@ -86,20 +167,54 @@ function App() {
         position: lists.length 
       });
       setLists([...lists, response.data]);
+      if (socket) {
+        socket.emit('list-created', { boardId: currentBoard.id, list: response.data });
+      }
     } catch (error) {
       console.error('Error creating list:', error);
     }
   };
 
-  const createCard = async (title, listId) => {
+  const createCard = async (cardData, listId) => {
     try {
       const listCards = cards.filter(card => card.listId === listId);
+      
+      // Upload attachments if any
+      let uploadedAttachments = [];
+      if (cardData.attachments && cardData.attachments.length > 0) {
+        const cardId = Date.now().toString();
+        const uploadPromises = cardData.attachments.map(async (att) => {
+          try {
+            const uploadResponse = await uploadsApi.upload({
+              fileName: att.fileName,
+              fileData: att.fileData,
+              cardId: cardId
+            });
+            return {
+              fileName: att.fileName,
+              storedName: uploadResponse.data.storedName,
+              size: att.size
+            };
+          } catch (err) {
+            console.error('Error uploading file:', err);
+            return null;
+          }
+        });
+        uploadedAttachments = (await Promise.all(uploadPromises)).filter(a => a !== null);
+      }
+
       const response = await cardsApi.create({ 
-        title, 
+        title: typeof cardData === 'string' ? cardData : cardData.title,
+        description: typeof cardData === 'object' ? cardData.description : '',
+        dueDate: typeof cardData === 'object' ? cardData.dueDate : null,
+        attachments: uploadedAttachments,
         listId,
         position: listCards.length 
       });
       setCards([...cards, response.data]);
+      if (socket && currentBoard) {
+        socket.emit('card-created', { boardId: currentBoard.id, card: response.data });
+      }
     } catch (error) {
       console.error('Error creating card:', error);
     }
@@ -109,6 +224,9 @@ function App() {
     try {
       await cardsApi.delete(cardId);
       setCards(cards.filter(c => c.id !== cardId));
+      if (socket && currentBoard) {
+        socket.emit('card-deleted', { boardId: currentBoard.id, cardId });
+      }
     } catch (error) {
       console.error('Error deleting card:', error);
     }
@@ -120,6 +238,9 @@ function App() {
       // Also remove all cards associated with this list
       setCards(cards.filter(c => c.listId !== listId));
       setLists(lists.filter(l => l.id !== listId));
+      if (socket && currentBoard) {
+        socket.emit('list-deleted', { boardId: currentBoard.id, listId });
+      }
     } catch (error) {
       console.error('Error deleting list:', error);
     }
@@ -162,12 +283,22 @@ function App() {
     return <div className="app">Loading...</div>;
   }
 
+  if (showLogin) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="app">
+        <Notifications cards={cards} />
         <header className="header">
           <h1>Epitrello</h1>
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {user && !user.isGuest && (
+              <span style={{ color: 'white', marginRight: '10px' }}>
+                👤 {user.username}
+              </span>
+            )}
             {boards.length > 0 && (
               <select 
                 value={currentBoard?.id || ''} 
@@ -188,6 +319,15 @@ function App() {
             >
               New Board
             </button>
+            {user && (
+              <button 
+                className="btn-secondary" 
+                onClick={handleLogout}
+                style={{ marginLeft: '10px' }}
+              >
+                Logout
+              </button>
+            )}
           </div>
         </header>
 
