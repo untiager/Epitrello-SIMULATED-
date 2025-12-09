@@ -3,9 +3,10 @@ import { DragDropContext } from 'react-beautiful-dnd';
 import Board from './components/Board';
 import Modal from './components/Modal';
 import CardDetailModal from './components/CardDetailModal';
+import CreateBoardModal from './components/CreateBoardModal';
 import Notifications from './components/Notifications';
 import Login from './components/Login';
-import { boardsApi, listsApi, cardsApi, uploadsApi } from './services/api';
+import { boardsApi, listsApi, cardsApi, uploadsApi, templatesApi } from './services/api';
 import io from 'socket.io-client';
 
 const SOCKET_URL = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:3001';
@@ -148,14 +149,57 @@ function App() {
     }
   };
 
-  const createBoard = async (name, description) => {
+  const createBoard = async (data) => {
     try {
-      const response = await boardsApi.create({ name, description });
-      setBoards([...boards, response.data]);
-      setCurrentBoard(response.data);
+      let response;
+      if (data.templateId) {
+        // Create board from template
+        response = await templatesApi.createBoard(data.templateId, {
+          name: data.name,
+          userId: user?.id
+        });
+      } else {
+        // Create blank board
+        response = await boardsApi.create({ 
+          name: data.name, 
+          description: data.description 
+        });
+      }
+      
+      const newBoard = response.data;
+      setBoards([...boards, newBoard]);
+      setCurrentBoard(newBoard);
       setShowBoardModal(false);
+      
+      // Reload lists and cards for the new board
+      await loadLists(newBoard.id);
     } catch (error) {
       console.error('Error creating board:', error);
+      alert('Failed to create board');
+    }
+  };
+
+  const deleteBoard = async () => {
+    if (!currentBoard) return;
+    
+    if (!window.confirm(`Are you sure you want to delete "${currentBoard.name}" and all its lists and cards?`)) {
+      return;
+    }
+
+    try {
+      await boardsApi.delete(currentBoard.id);
+      const updatedBoards = boards.filter(b => b.id !== currentBoard.id);
+      setBoards(updatedBoards);
+      setCurrentBoard(updatedBoards.length > 0 ? updatedBoards[0] : null);
+      setLists([]);
+      setCards([]);
+      
+      if (socket && currentBoard) {
+        socket.emit('board-deleted', { boardId: currentBoard.id });
+      }
+    } catch (error) {
+      console.error('Error deleting board:', error);
+      alert('Failed to delete board');
     }
   };
 
@@ -343,6 +387,16 @@ function App() {
             >
               New Board
             </button>
+            {currentBoard && (
+              <button 
+                className="btn-secondary" 
+                onClick={deleteBoard}
+                style={{ backgroundColor: '#dc3545', borderColor: '#dc3545' }}
+                title="Delete current board"
+              >
+                🗑 Delete Board
+              </button>
+            )}
             {user && (
               <button 
                 className="btn-secondary" 
@@ -380,14 +434,9 @@ function App() {
         )}
 
         {showBoardModal && (
-          <Modal
-            title="Create New Board"
+          <CreateBoardModal
             onClose={() => setShowBoardModal(false)}
-            onSubmit={(data) => createBoard(data.name, data.description)}
-            fields={[
-              { name: 'name', label: 'Board Name', required: true },
-              { name: 'description', label: 'Description', type: 'textarea' }
-            ]}
+            onSubmit={createBoard}
           />
         )}
 

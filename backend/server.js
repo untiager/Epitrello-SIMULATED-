@@ -6,6 +6,7 @@ const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
 const { initializeDatabase, migrateJsonData } = require('./db');
+const { seedTemplates } = require('./seedTemplates');
 
 const boardRoutes = require('./routes/boards');
 const listRoutes = require('./routes/lists');
@@ -116,6 +117,9 @@ async function startServer() {
     try {
         // Initialize database schema
         await initializeDatabase();
+        
+        // Seed default templates
+        await seedTemplates();
         
         // Migrate existing JSON data if database is empty
         // await migrateJsonData(); // Uncomment if you want to migrate existing data
