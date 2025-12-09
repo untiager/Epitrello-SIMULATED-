@@ -4,18 +4,18 @@ Epitrello is a simple, web-based project management application inspired by Trel
 
 ## Features
 
-- 📋 **Board Management**: Create and manage multiple project boards
-- 📝 **List Organization**: Create lists to organize your workflow
-- 🎯 **Card Management**: Add, edit, and organize task cards
-- 🗑️ **Delete Operations**: Delete cards and lists with confirmation dialogs
-- 🖱️ **Drag & Drop**: Move cards between lists with intuitive drag-and-drop
-- 📅 **Due Dates**: Set due dates on cards with visual indicators for overdue items
-- 🔔 **Notifications**: Real-time notifications for due dates and overdue cards
-- 📎 **File Attachments**: Upload and attach files to cards
-- 👥 **User Authentication**: Register and login with secure authentication
-- 🔄 **Real-time Collaboration**: WebSocket-powered live updates across users
-- 💾 **Data Persistence**: All data is stored in JSON files for simplicity
-- 🐳 **Docker Support**: Easy deployment with Docker Compose
+- **Board Management**: Create and manage multiple project boards
+- **List Organization**: Create lists to organize your workflow
+- **Card Management**: Add, edit, and organize task cards
+- **Delete Operations**: Delete cards and lists with confirmation dialogs
+- **Drag & Drop**: Move cards between lists with intuitive drag-and-drop
+- **Due Dates**: Set due dates on cards with visual indicators for overdue items
+- **Notifications**: Real-time notifications for due dates and overdue cards
+- **File Attachments**: Upload and attach files to cards
+- **User Authentication**: Register and login with secure authentication
+- **Real-time Collaboration**: WebSocket-powered live updates across users
+- **Data Persistence**: All data is stored in JSON files for simplicity
+- **Docker Support**: Easy deployment with Docker Compose
 
 ## Tech Stack
 
@@ -212,18 +212,19 @@ The application uses simple JSON file storage:
 ## Future Enhancements
 
 Completed features (delivered 5/12):
-- ✅ Possibility to delete cards and lists
-- ✅ User authentication and authorization
-- ✅ Real-time collaboration with WebSockets
-- ✅ Card due dates and notifications
-- ✅ File attachments
+- Possibility to delete cards and lists
+- User authentication and authorization
+- Real-time collaboration with WebSockets
+- Card due dates and notifications
+- File attachments
 
-Potential features for later:
+Potential features for later (first part due 18/12):
 - Database integration (PostgreSQL/MongoDB)
 - Advanced search and filtering
 - Card comments and activity history
-- Email notifications
 - Board templates
+----------------------------------------------------
+- Email notifications
 - Card labels and tags
 - Advanced permission system
 
