@@ -35,3 +35,31 @@ export const uploadsApi = {
   download: (fileName) => api.get(`/uploads/download/${fileName}`),
   delete: (fileName) => api.delete(`/uploads/${fileName}`),
 };
+
+export const commentsApi = {
+  getByCardId: (cardId) => api.get(`/comments/card/${cardId}`),
+  create: (data) => api.post('/comments', data),
+  update: (id, data) => api.put(`/comments/${id}`, data),
+  delete: (id) => api.delete(`/comments/${id}`),
+};
+
+export const activityApi = {
+  getByCardId: (cardId) => api.get(`/activity/card/${cardId}`),
+  getByBoardId: (boardId) => api.get(`/activity/board/${boardId}`),
+  create: (data) => api.post('/activity', data),
+};
+
+export const templatesApi = {
+  getAll: () => api.get('/templates'),
+  getById: (id) => api.get(`/templates/${id}`),
+  create: (data) => api.post('/templates', data),
+  createBoard: (id, data) => api.post(`/templates/${id}/create-board`, data),
+  delete: (id) => api.delete(`/templates/${id}`),
+};
+
+export const searchApi = {
+  search: (params) => api.get('/search', { params }),
+  searchBoards: (params) => api.get('/search/boards', { params }),
+  getOverdue: (params) => api.get('/search/overdue', { params }),
+  getDueSoon: (params) => api.get('/search/due-soon', { params }),
+};

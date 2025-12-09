@@ -1,12 +1,20 @@
 import React from 'react';
 import { Draggable } from 'react-beautiful-dnd';
 
-const Card = ({ card, index, onDelete }) => {
+const Card = ({ card, index, onDelete, onClick }) => {
   const handleDelete = (e) => {
     e.stopPropagation();
     if (window.confirm(`Are you sure you want to delete "${card.title}"?`)) {
       onDelete(card.id);
     }
+  };
+
+  const handleClick = (e) => {
+    // Don't open modal if clicking delete button
+    if (e.target.closest('.delete-btn')) {
+      return;
+    }
+    onClick(card);
   };
 
   const isOverdue = card.dueDate && new Date(card.dueDate) < new Date();
@@ -20,20 +28,22 @@ const Card = ({ card, index, onDelete }) => {
   };
 
   return (
-    <Draggable draggableId={card.id} index={index}>
+    <Draggable draggableId={String(card.id)} index={index}>
       {(provided, snapshot) => (
         <div
           className="card"
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          onClick={handleClick}
           style={{
             ...provided.draggableProps.style,
             transform: snapshot.isDragging 
               ? `${provided.draggableProps.style?.transform} rotate(5deg)` 
               : provided.draggableProps.style?.transform,
             opacity: snapshot.isDragging ? 0.8 : 1,
-            borderLeft: isOverdue ? '3px solid #dc3545' : (isDueSoon && !isOverdue) ? '3px solid #ffc107' : 'none'
+            borderLeft: isOverdue ? '3px solid #dc3545' : (isDueSoon && !isOverdue) ? '3px solid #ffc107' : 'none',
+            cursor: 'pointer'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

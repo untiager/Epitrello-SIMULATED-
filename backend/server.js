@@ -5,12 +5,17 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
+const { initializeDatabase, migrateJsonData } = require('./db');
 
 const boardRoutes = require('./routes/boards');
 const listRoutes = require('./routes/lists');
 const cardRoutes = require('./routes/cards');
 const uploadRoutes = require('./routes/uploads');
 const authRoutes = require('./routes/auth');
+const commentRoutes = require('./routes/comments');
+const activityRoutes = require('./routes/activity');
+const templateRoutes = require('./routes/templates');
+const searchRoutes = require('./routes/search');
 
 const app = express();
 const server = http.createServer(app);
@@ -96,12 +101,33 @@ app.use('/api/boards', boardRoutes);
 app.use('/api/lists', listRoutes);
 app.use('/api/cards', cardRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/search', searchRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Epitrello API is running' });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// Initialize database and start server
+async function startServer() {
+    try {
+        // Initialize database schema
+        await initializeDatabase();
+        
+        // Migrate existing JSON data if database is empty
+        // await migrateJsonData(); // Uncomment if you want to migrate existing data
+        
+        server.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+            console.log('Database initialized successfully');
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+}
+
+startServer();

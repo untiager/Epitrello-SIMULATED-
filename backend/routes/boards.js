@@ -1,76 +1,84 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const { pool } = require('../db');
 const router = express.Router();
 
-const dataPath = path.join(__dirname, '../data/boards.json');
+// Helper function to convert snake_case to camelCase
+const toCamelCase = (obj) => {
+    if (!obj) return obj;
+    const converted = {};
+    for (const key in obj) {
+        const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+        converted[camelKey] = obj[key];
+    }
+    return converted;
+};
 
 // Get all boards
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
     try {
-        const boards = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-        res.json(boards);
+        const result = await pool.query('SELECT * FROM boards ORDER BY created_at DESC');
+        res.json(result.rows.map(toCamelCase));
     } catch (error) {
+        console.error('Error fetching boards:', error);
         res.status(500).json({ error: 'Failed to fetch boards' });
     }
 });
 
 // Get a specific board
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
-        const boards = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-        const board = boards.find(b => b.id === req.params.id);
-        if (!board) {
+        const result = await pool.query('SELECT * FROM boards WHERE id = $1', [req.params.id]);
+        if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Board not found' });
         }
-        res.json(board);
+        res.json(result.rows[0]);
     } catch (error) {
+        console.error('Error fetching board:', error);
         res.status(500).json({ error: 'Failed to fetch board' });
     }
 });
 
 // Create a new board
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
     try {
-        const boards = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-        const newBoard = {
-            id: Date.now().toString(),
-            name: req.body.name,
-            description: req.body.description || '',
-            createdAt: new Date().toISOString()
-        };
-        boards.push(newBoard);
-        fs.writeFileSync(dataPath, JSON.stringify(boards, null, 2));
-        res.status(201).json(newBoard);
+        const result = await pool.query(
+            'INSERT INTO boards (name, description) VALUES ($1, $2) RETURNING *',
+            [req.body.name, req.body.description || '']
+        );
+        res.status(201).json(toCamelCase(result.rows[0]));
     } catch (error) {
+        console.error('Error creating board:', error);
         res.status(500).json({ error: 'Failed to create board' });
     }
 });
 
 // Update a board
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
     try {
-        const boards = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-        const boardIndex = boards.findIndex(b => b.id === req.params.id);
-        if (boardIndex === -1) {
+        const result = await pool.query(
+            'UPDATE boards SET name = $1, description = $2 WHERE id = $3 RETURNING *',
+            [req.body.name, req.body.description, req.params.id]
+        );
+        if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Board not found' });
         }
-        boards[boardIndex] = { ...boards[boardIndex], ...req.body };
-        fs.writeFileSync(dataPath, JSON.stringify(boards, null, 2));
-        res.json(boards[boardIndex]);
+        res.json(result.rows[0]);
     } catch (error) {
+        console.error('Error updating board:', error);
         res.status(500).json({ error: 'Failed to update board' });
     }
 });
 
 // Delete a board
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
-        const boards = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-        const filteredBoards = boards.filter(b => b.id !== req.params.id);
-        fs.writeFileSync(dataPath, JSON.stringify(filteredBoards, null, 2));
+        const result = await pool.query('DELETE FROM boards WHERE id = $1 RETURNING id', [req.params.id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Board not found' });
+        }
         res.status(204).send();
     } catch (error) {
+        console.error('Error deleting board:', error);
         res.status(500).json({ error: 'Failed to delete board' });
     }
 });

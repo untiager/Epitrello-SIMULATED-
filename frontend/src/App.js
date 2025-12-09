@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import Board from './components/Board';
 import Modal from './components/Modal';
+import CardDetailModal from './components/CardDetailModal';
 import Notifications from './components/Notifications';
 import Login from './components/Login';
 import { boardsApi, listsApi, cardsApi, uploadsApi } from './services/api';
@@ -15,6 +16,7 @@ function App() {
   const [lists, setLists] = useState([]);
   const [cards, setCards] = useState([]);
   const [showBoardModal, setShowBoardModal] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
   const [user, setUser] = useState(null);
@@ -162,7 +164,7 @@ function App() {
     
     try {
       const response = await listsApi.create({ 
-        name, 
+        title: name,
         boardId: currentBoard.id,
         position: lists.length 
       });
@@ -232,6 +234,25 @@ function App() {
     }
   };
 
+  const handleCardClick = (card) => {
+    setSelectedCard(card);
+  };
+
+  const handleCardUpdate = async (updatedCard) => {
+    try {
+      const response = await cardsApi.update(updatedCard.id, updatedCard);
+      setCards(cards.map(card => card.id === updatedCard.id ? response.data : card));
+      setSelectedCard(response.data);
+      
+      if (socket && currentBoard) {
+        socket.emit('card-updated', { boardId: currentBoard.id, card: response.data });
+      }
+    } catch (error) {
+      console.error('Error updating card:', error);
+      alert('Failed to update card');
+    }
+  };
+
   const deleteList = async (listId) => {
     try {
       await listsApi.delete(listId);
@@ -255,21 +276,23 @@ function App() {
       return;
     }
 
-    const card = cards.find(c => c.id === draggableId);
+    // Convert draggableId string to number for comparison
+    const cardId = parseInt(draggableId, 10);
+    const card = cards.find(c => c.id === cardId);
     if (!card) return;
 
-    const updatedCards = cards.filter(c => c.id !== draggableId);
+    const updatedCards = cards.filter(c => c.id !== cardId);
     const newCard = {
       ...card,
-      listId: destination.droppableId,
+      listId: parseInt(destination.droppableId, 10),
       position: destination.index
     };
 
     setCards([...updatedCards, newCard].sort((a, b) => a.position - b.position));
 
     try {
-      await cardsApi.update(draggableId, {
-        listId: destination.droppableId,
+      await cardsApi.update(cardId, {
+        listId: parseInt(destination.droppableId, 10),
         position: destination.index
       });
     } catch (error) {
@@ -303,7 +326,8 @@ function App() {
               <select 
                 value={currentBoard?.id || ''} 
                 onChange={(e) => {
-                  const board = boards.find(b => b.id === e.target.value);
+                  const boardId = parseInt(e.target.value, 10);
+                  const board = boards.find(b => b.id === boardId);
                   setCurrentBoard(board);
                 }}
                 style={{ marginRight: '10px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
@@ -340,6 +364,7 @@ function App() {
             onCreateCard={createCard}
             onDeleteCard={deleteCard}
             onDeleteList={deleteList}
+            onCardClick={handleCardClick}
           />
         ) : (
           <div style={{ color: 'white', textAlign: 'center', marginTop: '50px' }}>
@@ -363,6 +388,15 @@ function App() {
               { name: 'name', label: 'Board Name', required: true },
               { name: 'description', label: 'Description', type: 'textarea' }
             ]}
+          />
+        )}
+
+        {selectedCard && (
+          <CardDetailModal
+            card={selectedCard}
+            userId={user?.id}
+            onClose={() => setSelectedCard(null)}
+            onUpdate={handleCardUpdate}
           />
         )}
       </div>

@@ -3,7 +3,7 @@ import { Droppable } from 'react-beautiful-dnd';
 import Card from './Card';
 import Modal from './Modal';
 
-const List = ({ list, cards, onCreateCard, onDeleteCard, onDeleteList }) => {
+const List = ({ list, cards, onCreateCard, onDeleteCard, onDeleteList, onCardClick }) => {
   const [showCardModal, setShowCardModal] = useState(false);
 
   const handleCreateCard = (data) => {
@@ -12,7 +12,7 @@ const List = ({ list, cards, onCreateCard, onDeleteCard, onDeleteList }) => {
   };
 
   const handleDeleteList = () => {
-    if (window.confirm(`Are you sure you want to delete "${list.name}" and all its cards?`)) {
+    if (window.confirm(`Are you sure you want to delete "${list.title}" and all its cards?`)) {
       onDeleteList(list.id);
     }
   };
@@ -21,7 +21,7 @@ const List = ({ list, cards, onCreateCard, onDeleteCard, onDeleteList }) => {
     <>
       <div className="list">
         <div className="list-header">
-          <h3 className="list-title">{list.name}</h3>
+          <h3 className="list-title">{list.title}</h3>
           <div className="list-actions">
             <button 
               className="btn"
@@ -41,7 +41,7 @@ const List = ({ list, cards, onCreateCard, onDeleteCard, onDeleteList }) => {
           </div>
         </div>
         
-        <Droppable droppableId={list.id}>
+        <Droppable droppableId={String(list.id)}>
           {(provided, snapshot) => (
             <div
               {...provided.droppableProps}
@@ -54,7 +54,7 @@ const List = ({ list, cards, onCreateCard, onDeleteCard, onDeleteList }) => {
               }}
             >
               {cards.map((card, index) => (
-                <Card key={card.id} card={card} index={index} onDelete={onDeleteCard} />
+                <Card key={card.id} card={card} index={index} onDelete={onDeleteCard} onClick={onCardClick} />
               ))}
               {provided.placeholder}
               

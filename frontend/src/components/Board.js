@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import List from './List';
 import Modal from './Modal';
 
-const Board = ({ board, lists, cards, onCreateList, onCreateCard, onDeleteCard, onDeleteList }) => {
+const Board = ({ board, lists, cards, onCreateList, onCreateCard, onDeleteCard, onDeleteList, onCardClick }) => {
   const [showListModal, setShowListModal] = useState(false);
 
   const handleCreateList = (data) => {
@@ -21,6 +21,7 @@ const Board = ({ board, lists, cards, onCreateList, onCreateCard, onDeleteCard, 
             onCreateCard={onCreateCard}
             onDeleteCard={onDeleteCard}
             onDeleteList={onDeleteList}
+            onCardClick={onCardClick}
           />
         ))}
         <button 
